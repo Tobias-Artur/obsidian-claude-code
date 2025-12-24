@@ -50,6 +50,32 @@ export interface NoteMetadata {
 }
 
 /**
+ * Metadata for a Claude Code sub-agent.
+ *
+ * Sub-agents are defined in ~/.claude/agents/ directory
+ * as markdown files with YAML frontmatter.
+ */
+export interface SubAgentMetadata {
+	/** Agent name from frontmatter (e.g., "terraform-scaffolder") */
+	name: string;
+
+	/** Agent description from frontmatter */
+	description: string;
+
+	/** Model preference from frontmatter (e.g., "sonnet") */
+	model?: string;
+
+	/** Color identifier from frontmatter (e.g., "blue") */
+	color?: string;
+
+	/** Emoji to display in UI (always "🤖" for sub-agents) */
+	emoji: string;
+
+	/** Full path to the agent's markdown file */
+	filePath: string;
+}
+
+/**
  * Interface for accessing vault notes and files.
  *
  * Provides methods for searching, reading, and listing notes
@@ -91,4 +117,14 @@ export interface IVaultAccess {
 	 * @returns Promise resolving to array of all note metadata
 	 */
 	listNotes(): Promise<NoteMetadata[]>;
+
+	/**
+	 * Get available Claude Code sub-agents from ~/.claude/agents/
+	 *
+	 * Sub-agents are specialized agents defined as markdown files
+	 * with YAML frontmatter in the user's Claude configuration directory.
+	 *
+	 * @returns Promise resolving to array of sub-agent metadata
+	 */
+	getAvailableSubAgents(): Promise<SubAgentMetadata[]>;
 }

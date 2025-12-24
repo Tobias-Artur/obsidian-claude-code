@@ -4,7 +4,10 @@ import { setIcon, DropdownComponent } from "obsidian";
 
 import type AgentClientPlugin from "../../plugin";
 import type { ChatView } from "./ChatView";
-import type { NoteMetadata } from "../../domain/ports/vault-access.port";
+import type {
+	NoteMetadata,
+	SubAgentMetadata,
+} from "../../domain/ports/vault-access.port";
 import type {
 	SlashCommand,
 	SessionModeState,
@@ -124,10 +127,10 @@ export function ChatInput({
 	}, []);
 
 	/**
-	 * Handle mention selection from dropdown.
+	 * Handle mention selection from dropdown (note or sub-agent).
 	 */
 	const selectMention = useCallback(
-		(suggestion: NoteMetadata) => {
+		(suggestion: NoteMetadata | SubAgentMetadata) => {
 			const newText = mentions.selectSuggestion(inputValue, suggestion);
 			setTextAndFocus(newText);
 		},

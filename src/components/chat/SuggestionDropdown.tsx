@@ -3,8 +3,12 @@ const { useRef, useEffect, useMemo } = React;
 import { Logger } from "../../shared/logger";
 import type AgentClientPlugin from "../../plugin";
 import type { ChatView } from "./ChatView";
-import type { NoteMetadata } from "../../domain/ports/vault-access.port";
+import type {
+	NoteMetadata,
+	SubAgentMetadata,
+} from "../../domain/ports/vault-access.port";
 import type { SlashCommand } from "../../domain/models/chat-session";
+import { truncateDescription } from "../../shared/mention-utils";
 
 /**
  * Dropdown type for suggestion display.
@@ -21,14 +25,14 @@ interface SuggestionDropdownProps {
 	/** Type of dropdown to display */
 	type: DropdownType;
 
-	/** Items to display (NoteMetadata for mentions, SlashCommand for commands) */
-	items: NoteMetadata[] | SlashCommand[];
+	/** Items to display (SubAgentMetadata/NoteMetadata for mentions, SlashCommand for commands) */
+	items: Array<SubAgentMetadata | NoteMetadata> | SlashCommand[];
 
 	/** Currently selected item index */
 	selectedIndex: number;
 
 	/** Callback when an item is selected */
-	onSelect: (item: NoteMetadata | SlashCommand) => void;
+	onSelect: (item: SubAgentMetadata | NoteMetadata | SlashCommand) => void;
 
 	/** Callback to close the dropdown */
 	onClose: () => void;
@@ -96,29 +100,62 @@ export function SuggestionDropdown({
 	/**
 	 * Render a single dropdown item based on type.
 	 */
-	const renderItem = (item: NoteMetadata | SlashCommand, index: number) => {
+	const renderItem = (
+		item: SubAgentMetadata | NoteMetadata | SlashCommand,
+		index: number,
+	) => {
 		const isSelected = index === selectedIndex;
 		const hasBorder = index < items.length - 1;
 
 		if (type === "mention") {
-			const note = item as NoteMetadata;
-			return (
-				<div
-					key={note.path}
-					className={`mention-dropdown-item ${isSelected ? "selected" : ""} ${hasBorder ? "has-border" : ""}`}
-					onClick={() => onSelect(note)}
-					onMouseEnter={() => {
-						// Could update selected index on hover
-					}}
-				>
-					<div className="mention-dropdown-item-name">
-						{note.name}
+			// Check if sub-agent or note by presence of 'emoji' field
+			if ("emoji" in item) {
+				// Sub-agent
+				const subAgent = item as SubAgentMetadata;
+				const truncatedDesc = truncateDescription(
+					subAgent.description,
+					10,
+				);
+				return (
+					<div
+						key={subAgent.filePath}
+						className={`mention-dropdown-item ${isSelected ? "selected" : ""} ${hasBorder ? "has-border" : ""}`}
+						onClick={() => onSelect(subAgent)}
+						onMouseEnter={() => {
+							// Could update selected index on hover
+						}}
+					>
+						<div className="mention-dropdown-item-name">
+							{subAgent.emoji} {subAgent.name}
+						</div>
+						{truncatedDesc && (
+							<div className="mention-dropdown-item-path">
+								{truncatedDesc}
+							</div>
+						)}
 					</div>
-					<div className="mention-dropdown-item-path">
-						{note.path}
+				);
+			} else {
+				// Note
+				const note = item as NoteMetadata;
+				return (
+					<div
+						key={note.path}
+						className={`mention-dropdown-item ${isSelected ? "selected" : ""} ${hasBorder ? "has-border" : ""}`}
+						onClick={() => onSelect(note)}
+						onMouseEnter={() => {
+							// Could update selected index on hover
+						}}
+					>
+						<div className="mention-dropdown-item-name">
+							{note.name}
+						</div>
+						<div className="mention-dropdown-item-path">
+							{note.path}
+						</div>
 					</div>
-				</div>
-			);
+				);
+			}
 		} else {
 			// type === "slash-command"
 			const command = item as SlashCommand;

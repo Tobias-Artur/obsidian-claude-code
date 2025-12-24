@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import type {
 	NoteMetadata,
+	SubAgentMetadata,
 	IVaultAccess,
 } from "../domain/ports/vault-access.port";
 import {
@@ -11,8 +12,8 @@ import {
 import type AgentClientPlugin from "../plugin";
 
 export interface UseMentionsReturn {
-	/** Note suggestions matching the current mention query */
-	suggestions: NoteMetadata[];
+	/** Sub-agent and note suggestions matching the current mention query */
+	suggestions: Array<SubAgentMetadata | NoteMetadata>;
 	/** Currently selected index in the dropdown */
 	selectedIndex: number;
 	/** Whether the dropdown is open */
@@ -22,15 +23,18 @@ export interface UseMentionsReturn {
 
 	/**
 	 * Update mention suggestions based on current input.
-	 * Detects @-mentions and searches for matching notes.
+	 * Detects @-mentions and searches for matching sub-agents and notes.
 	 */
 	updateSuggestions: (input: string, cursorPosition: number) => Promise<void>;
 
 	/**
-	 * Select a note from the dropdown.
-	 * @returns Updated input text with mention replaced (e.g., "@[[note name]]")
+	 * Select a sub-agent or note from the dropdown.
+	 * @returns Updated input text with mention replaced
 	 */
-	selectSuggestion: (input: string, suggestion: NoteMetadata) => string;
+	selectSuggestion: (
+		input: string,
+		suggestion: SubAgentMetadata | NoteMetadata,
+	) => string;
 
 	/** Navigate the dropdown selection */
 	navigate: (direction: "up" | "down") => void;
@@ -52,7 +56,9 @@ export function useMentions(
 	vaultAccess: IVaultAccess,
 	plugin: AgentClientPlugin,
 ): UseMentionsReturn {
-	const [suggestions, setSuggestions] = useState<NoteMetadata[]>([]);
+	const [suggestions, setSuggestions] = useState<
+		Array<SubAgentMetadata | NoteMetadata>
+	>([]);
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const [context, setContext] = useState<MentionContext | null>(null);
 
@@ -70,8 +76,21 @@ export function useMentions(
 				return;
 			}
 
-			const results = await vaultAccess.searchNotes(ctx.query);
-			setSuggestions(results);
+			// Get sub-agents and filter by query
+			const subAgents = await vaultAccess.getAvailableSubAgents();
+			const filteredAgents = subAgents.filter(
+				(a) =>
+					a.name.toLowerCase().includes(ctx.query.toLowerCase()) ||
+					a.description.toLowerCase().includes(ctx.query.toLowerCase()),
+			);
+
+			// Get notes and filter by query (existing logic)
+			const notes = await vaultAccess.searchNotes(ctx.query);
+
+			// Combine: sub-agents first, then notes
+			const combined = [...filteredAgents, ...notes];
+
+			setSuggestions(combined);
 			setSelectedIndex(0);
 			setContext(ctx);
 		},
@@ -79,12 +98,21 @@ export function useMentions(
 	);
 
 	const selectSuggestion = useCallback(
-		(input: string, suggestion: NoteMetadata): string => {
+		(input: string, suggestion: SubAgentMetadata | NoteMetadata): string => {
 			if (!context) {
 				return input;
 			}
 
-			const { newText } = replaceMention(input, context, suggestion.name);
+			// Determine if this is a sub-agent or note
+			const isSubAgent = "emoji" in suggestion;
+			const mentionName = suggestion.name;
+
+			const { newText } = replaceMention(
+				input,
+				context,
+				mentionName,
+				isSubAgent,
+			);
 
 			setSuggestions([]);
 			setSelectedIndex(0);

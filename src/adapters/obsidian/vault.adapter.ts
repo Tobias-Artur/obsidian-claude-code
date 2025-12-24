@@ -9,9 +9,11 @@
 import type {
 	IVaultAccess,
 	NoteMetadata,
+	SubAgentMetadata,
 	EditorPosition,
 } from "../../domain/ports/vault-access.port";
 import { NoteMentionService } from "./mention-service";
+import { SubAgentService } from "./subagent-service";
 import type AgentClientPlugin from "../../plugin";
 import {
 	TFile,
@@ -31,6 +33,7 @@ import { Compartment, StateEffect } from "@codemirror/state";
  */
 export class ObsidianVaultAdapter implements IVaultAccess {
 	private mentionService: NoteMentionService;
+	private subAgentService: SubAgentService;
 	private currentSelection: {
 		filePath: string;
 		selection: { from: EditorPosition; to: EditorPosition };
@@ -46,6 +49,7 @@ export class ObsidianVaultAdapter implements IVaultAccess {
 		mentionService: NoteMentionService,
 	) {
 		this.mentionService = mentionService;
+		this.subAgentService = new SubAgentService();
 	}
 
 	/**
@@ -350,5 +354,14 @@ export class ObsidianVaultAdapter implements IVaultAccess {
 					? [aliases]
 					: undefined,
 		};
+	}
+
+	/**
+	 * Get available Claude Code sub-agents from ~/.claude/agents/
+	 *
+	 * @returns Promise resolving to array of sub-agent metadata
+	 */
+	async getAvailableSubAgents(): Promise<SubAgentMetadata[]> {
+		return await this.subAgentService.getSubAgents();
 	}
 }

@@ -93,17 +93,20 @@ export function detectMention(
 	return mentionContext;
 }
 
-// Replace mention in text with the selected note
+// Replace mention in text with the selected note or sub-agent
 export function replaceMention(
 	text: string,
 	mentionContext: MentionContext,
 	noteTitle: string,
+	isSubAgent = false,
 ): { newText: string; newCursorPos: number } {
 	const before = text.slice(0, mentionContext.start);
 	const after = text.slice(mentionContext.end);
 
-	// Always use @[[filename]] format
-	const replacement = ` @[[${noteTitle}]] `;
+	// Sub-agents use @agent-name format, notes use @[[filename]] format
+	const replacement = isSubAgent
+		? ` @${noteTitle} `
+		: ` @[[${noteTitle}]] `;
 
 	const newText = before + replacement + after;
 	const newCursorPos = mentionContext.start + replacement.length;
@@ -137,4 +140,25 @@ export function extractMentionedNotes(
 	}
 
 	return result;
+}
+
+/**
+ * Truncate a description to a maximum number of words.
+ *
+ * @param description - The description to truncate
+ * @param maxWords - Maximum number of words to keep
+ * @returns Truncated description with "..." appended if truncated, or original if short enough
+ */
+export function truncateDescription(
+	description: string | undefined,
+	maxWords: number,
+): string | undefined {
+	if (!description) return undefined;
+
+	const words = description.split(/\s+/);
+	if (words.length <= maxWords) {
+		return description;
+	}
+
+	return words.slice(0, maxWords).join(" ") + "...";
 }
