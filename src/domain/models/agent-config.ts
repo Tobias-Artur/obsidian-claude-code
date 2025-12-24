@@ -54,16 +54,6 @@ export interface BaseAgentSettings {
 }
 
 /**
- * Configuration for Gemini CLI agent.
- *
- * Extends base settings with Gemini-specific requirements.
- */
-export interface GeminiAgentSettings extends BaseAgentSettings {
-	/** Google API key for Gemini (GOOGLE_API_KEY) */
-	apiKey: string;
-}
-
-/**
  * Configuration for Claude Code agent.
  *
  * Extends base settings with Claude-specific requirements.
@@ -73,20 +63,3 @@ export interface ClaudeAgentSettings extends BaseAgentSettings {
 	apiKey: string;
 }
 
-/**
- * Configuration for Codex CLI agent.
- *
- * Extends base settings with Codex-specific requirements.
- */
-export interface CodexAgentSettings extends BaseAgentSettings {
-	/** OpenAI API key for Codex (OPENAI_API_KEY) */
-	apiKey: string;
-}
-
-/**
- * Configuration for custom ACP-compatible agents.
- *
- * Uses only the base settings, allowing users to configure
- * any agent that implements the Agent Client Protocol.
- */
-export type CustomAgentSettings = BaseAgentSettings;

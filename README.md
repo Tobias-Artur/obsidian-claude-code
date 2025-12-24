@@ -15,7 +15,7 @@
   <a href="https://www.buymeacoffee.com/rait09" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" width="180" height="50" ></a>
 </p>
 
-Bring your AI agents directly into Obsidian! This plugin lets you chat with Claude Code, Codex, Gemini CLI, and other AI agents right from your vault. Your AI assistant is now just a side panel away. ✨
+Bring Claude Code directly into Obsidian! This plugin lets you chat with Claude Code right from your vault. Your AI assistant is now just a side panel away. ✨
 
 Built on [Agent Client Protocol (ACP)](https://github.com/zed-industries/agent-client-protocol) by Zed.
 
@@ -23,10 +23,9 @@ https://github.com/user-attachments/assets/1c538349-b3fb-44dd-a163-7331cbca7824
 
 ## ✨ Features
 
-- 🔗 **Direct Agent Integration**: Chat with AI coding agents in a dedicated right-side panel
+- 🔗 **Direct Agent Integration**: Chat with Claude Code in a dedicated right-side panel
 - 📝 **Note Mention Support**: Automatically include the active note in conversations, or manually use `@notename` to reference specific notes
-- ⚡ **Slash Command Support**: Use `/` commands to browse and trigger actions provided by your current agent
-- 🔄 **Multi-Agent Support**: Switch between Claude Code, Codex, Gemini CLI, and custom agents
+- ⚡ **Slash Command Support**: Use `/` commands to browse and trigger actions provided by Claude Code
 - 🎛️ **Mode & Model Switching**: Change AI models (e.g., Sonnet, Haiku) and agent modes (e.g., Plan Mode) directly from the chat
 - 💻 **Terminal Integration**: Let your agent execute terminal commands and return the results in chat
 - 🔐 **Permission Management**: Fine-grained control over agent actions
@@ -59,19 +58,9 @@ https://github.com/user-attachments/assets/1c538349-b3fb-44dd-a163-7331cbca7824
   npm install -g @zed-industries/claude-code-acp
   ```
 
-- For **Codex**:
-  ```bash
-  npm install -g @zed-industries/codex-acp
-  ```
-
-- For **Gemini CLI**:
-  ```bash
-  npm install -g @google/gemini-cli
-  ```
-
 ### Step 2: 🔍 Find Installation Paths
 
-After installing the agents, you need to find their absolute paths:
+After installing Claude Code, you need to find the absolute paths:
 
 **On macOS/Linux:**
 ```bash
@@ -82,14 +71,6 @@ which node
 # Find Claude Code path
 which claude-code-acp
 # Example output: /usr/local/bin/claude-code-acp
-
-# Find Codex path
-which codex-acp
-# Example output: /usr/local/bin/codex-acp
-
-# Find Gemini CLI path
-which gemini
-# Example output: /usr/local/bin/gemini
 ```
 
 **On Windows:**
@@ -101,14 +82,6 @@ where.exe node
 # Find Claude Code path
 where.exe claude-code-acp
 # Example output: C:\Users\Username\AppData\Roaming\npm\claude-code-acp.cmd
-
-# Find Codex path
-where.exe codex-acp
-# Example output: C:\Users\Username\AppData\Roaming\npm\codex-acp.cmd
-
-# Find Gemini CLI path
-where.exe gemini
-# Example output: C:\Users\Username\AppData\Roaming\npm\gemini.cmd
 ```
 
 ### Step 3: 🛠️ Configure Plugin Settings

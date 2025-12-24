@@ -11,8 +11,6 @@ import type { AgentClientPluginSettings } from "../plugin";
 import type {
 	BaseAgentSettings,
 	ClaudeAgentSettings,
-	GeminiAgentSettings,
-	CodexAgentSettings,
 } from "../domain/models/agent-config";
 import { toAgentConfig } from "../shared/settings-utils";
 
@@ -119,125 +117,29 @@ export interface UseAgentSessionReturn {
 // Helper Functions (Inlined from SwitchAgentUseCase)
 // ============================================================================
 
-/**
- * Get the currently active agent ID from settings.
- */
-function getActiveAgentId(settings: AgentClientPluginSettings): string {
-	return settings.activeAgentId || settings.claude.id;
-}
-
-/**
- * Get list of all available agents from settings.
- */
-function getAvailableAgentsFromSettings(
-	settings: AgentClientPluginSettings,
-): AgentInfo[] {
-	return [
-		{
-			id: settings.claude.id,
-			displayName: settings.claude.displayName || settings.claude.id,
-		},
-		{
-			id: settings.codex.id,
-			displayName: settings.codex.displayName || settings.codex.id,
-		},
-		{
-			id: settings.gemini.id,
-			displayName: settings.gemini.displayName || settings.gemini.id,
-		},
-		...settings.customAgents.map((agent) => ({
-			id: agent.id,
-			displayName: agent.displayName || agent.id,
-		})),
-	];
-}
-
-/**
- * Get the currently active agent information from settings.
- */
-function getCurrentAgent(settings: AgentClientPluginSettings): AgentInfo {
-	const activeId = getActiveAgentId(settings);
-	const agents = getAvailableAgentsFromSettings(settings);
-	return (
-		agents.find((agent) => agent.id === activeId) || {
-			id: activeId,
-			displayName: activeId,
-		}
-	);
-}
 
 // ============================================================================
 // Helper Functions (Inlined from ManageSessionUseCase)
 // ============================================================================
 
-/**
- * Find agent settings by ID from plugin settings.
- */
-function findAgentSettings(
-	settings: AgentClientPluginSettings,
-	agentId: string,
-): BaseAgentSettings | null {
-	if (agentId === settings.claude.id) {
-		return settings.claude;
-	}
-	if (agentId === settings.codex.id) {
-		return settings.codex;
-	}
-	if (agentId === settings.gemini.id) {
-		return settings.gemini;
-	}
-	// Search in custom agents
-	const customAgent = settings.customAgents.find(
-		(agent) => agent.id === agentId,
-	);
-	return customAgent || null;
-}
 
 /**
- * Build AgentConfig with API key injection for known agents.
+ * Build AgentConfig with API key injection for Claude.
  */
 function buildAgentConfigWithApiKey(
-	settings: AgentClientPluginSettings,
-	agentSettings: BaseAgentSettings,
-	agentId: string,
+	claudeSettings: ClaudeAgentSettings,
 	workingDirectory: string,
 ) {
-	const baseConfig = toAgentConfig(agentSettings, workingDirectory);
+	const baseConfig = toAgentConfig(claudeSettings, workingDirectory);
 
-	// Add API keys to environment for Claude, Codex, and Gemini
-	if (agentId === settings.claude.id) {
-		const claudeSettings = agentSettings as ClaudeAgentSettings;
-		return {
-			...baseConfig,
-			env: {
-				...baseConfig.env,
-				ANTHROPIC_API_KEY: claudeSettings.apiKey,
-			},
-		};
-	}
-	if (agentId === settings.codex.id) {
-		const codexSettings = agentSettings as CodexAgentSettings;
-		return {
-			...baseConfig,
-			env: {
-				...baseConfig.env,
-				OPENAI_API_KEY: codexSettings.apiKey,
-			},
-		};
-	}
-	if (agentId === settings.gemini.id) {
-		const geminiSettings = agentSettings as GeminiAgentSettings;
-		return {
-			...baseConfig,
-			env: {
-				...baseConfig.env,
-				GOOGLE_API_KEY: geminiSettings.apiKey,
-			},
-		};
-	}
-
-	// Custom agents - no API key injection
-	return baseConfig;
+	// Add Claude API key to environment
+	return {
+		...baseConfig,
+		env: {
+			...baseConfig.env,
+			ANTHROPIC_API_KEY: claudeSettings.apiKey,
+		},
+	};
 }
 
 // ============================================================================
@@ -288,14 +190,13 @@ export function useAgentSession(
 ): UseAgentSessionReturn {
 	// Get initial agent info from settings
 	const initialSettings = settingsAccess.getSnapshot();
-	const initialAgentId = getActiveAgentId(initialSettings);
-	const initialAgent = getCurrentAgent(initialSettings);
+	const claudeSettings = initialSettings.claude;
 
 	// Session state
 	const [session, setSession] = useState<ChatSession>(() =>
 		createInitialSession(
-			initialAgentId,
-			initialAgent.displayName,
+			claudeSettings.id,
+			claudeSettings.displayName,
 			workingDirectory,
 		),
 	);
@@ -311,18 +212,17 @@ export function useAgentSession(
 	 * (Inlined from ManageSessionUseCase.createSession)
 	 */
 	const createSession = useCallback(async () => {
-		// Get current settings and agent info
+		// Get current settings
 		const settings = settingsAccess.getSnapshot();
-		const activeAgentId = getActiveAgentId(settings);
-		const currentAgent = getCurrentAgent(settings);
+		const claudeSettings = settings.claude;
 
 		// Reset to initializing state immediately
 		setSession((prev) => ({
 			...prev,
 			sessionId: null,
 			state: "initializing",
-			agentId: activeAgentId,
-			agentDisplayName: currentAgent.displayName,
+			agentId: claudeSettings.id,
+			agentDisplayName: claudeSettings.displayName,
 			authMethods: [],
 			availableCommands: undefined,
 			modes: undefined,
@@ -333,25 +233,9 @@ export function useAgentSession(
 		setErrorInfo(null);
 
 		try {
-			// Find agent settings
-			const agentSettings = findAgentSettings(settings, activeAgentId);
-
-			if (!agentSettings) {
-				setSession((prev) => ({ ...prev, state: "error" }));
-				setErrorInfo({
-					title: "Agent Not Found",
-					message: `Agent with ID "${activeAgentId}" not found in settings`,
-					suggestion:
-						"Please check your agent configuration in settings.",
-				});
-				return;
-			}
-
 			// Build AgentConfig with API key injection
 			const agentConfig = buildAgentConfigWithApiKey(
-				settings,
-				agentSettings,
-				activeAgentId,
+				claudeSettings,
 				workingDirectory,
 			);
 
@@ -359,7 +243,7 @@ export function useAgentSession(
 			// Only initialize if agent is not initialized OR agent ID has changed
 			const needsInitialize =
 				!agentClient.isInitialized() ||
-				agentClient.getCurrentAgentId() !== activeAgentId;
+				agentClient.getCurrentAgentId() !== claudeSettings.id;
 
 			let authMethods: AuthenticationMethod[] = [];
 
@@ -462,33 +346,25 @@ export function useAgentSession(
 	}, [agentClient, session.sessionId]);
 
 	/**
-	 * Switch to a different agent.
-	 * Updates settings and local session state.
+	 * Switch to a different agent (no-op since only Claude is supported).
+	 * Kept for API compatibility.
 	 */
 	const switchAgent = useCallback(
 		async (agentId: string) => {
-			// Update settings (persists the change)
-			await settingsAccess.updateSettings({ activeAgentId: agentId });
-
-			// Update session with new agent ID
-			// Clear availableCommands, modes, and models (new agent will send its own)
-			setSession((prev) => ({
-				...prev,
-				agentId,
-				availableCommands: undefined,
-				modes: undefined,
-				models: undefined,
-			}));
+			// No-op: Only Claude is supported
 		},
-		[settingsAccess],
+		[],
 	);
 
 	/**
-	 * Get list of available agents.
+	 * Get list of available agents (always returns Claude).
 	 */
 	const getAvailableAgents = useCallback(() => {
 		const settings = settingsAccess.getSnapshot();
-		return getAvailableAgentsFromSettings(settings);
+		return [{
+			id: settings.claude.id,
+			displayName: settings.claude.displayName || settings.claude.id,
+		}];
 	}, [settingsAccess]);
 
 	/**

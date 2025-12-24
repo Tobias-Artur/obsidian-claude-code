@@ -6,12 +6,11 @@ import {
 	Platform,
 } from "obsidian";
 import type AgentClientPlugin from "../../plugin";
-import type { CustomAgentSettings, AgentEnvVar } from "../../plugin";
+import type { AgentEnvVar } from "../../plugin";
 import { normalizeEnvVars } from "../../shared/settings-utils";
 
 export class AgentClientSettingTab extends PluginSettingTab {
 	plugin: AgentClientPlugin;
-	private agentSelector: DropdownComponent | null = null;
 	private unsubscribe: (() => void) | null = null;
 
 	constructor(app: App, plugin: AgentClientPlugin) {
@@ -23,7 +22,6 @@ export class AgentClientSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 
 		containerEl.empty();
-		this.agentSelector = null;
 
 		// Cleanup previous subscription if exists
 		if (this.unsubscribe) {
@@ -31,26 +29,45 @@ export class AgentClientSettingTab extends PluginSettingTab {
 			this.unsubscribe = null;
 		}
 
-		// Documentation link
-		const docContainer = containerEl.createDiv({
-			cls: "agent-client-doc-link",
-		});
-		docContainer.createSpan({ text: "Need help? Check out the " });
-		docContainer.createEl("a", {
-			text: "documentation",
-			href: "https://rait-09.github.io/obsidian-agent-client/",
-		});
-		docContainer.createSpan({ text: "." });
+		// Installation instructions heading
+		new Setting(containerEl).setName("Installation commands").setHeading();
 
-		this.renderAgentSelector(containerEl);
+		// Installation details
+		const installDetails = containerEl.createEl("details");
+		const installSummary = installDetails.createEl("summary", {
+			text: "Click to view installation commands",
+		});
+		installSummary.style.cursor = "pointer";
+		installSummary.style.marginBottom = "10px";
 
-		// Subscribe to settings changes to update agent dropdown
-		this.unsubscribe = this.plugin.settingsStore.subscribe(() => {
-			this.updateAgentDropdown();
+		const commandsDiv = installDetails.createDiv();
+		commandsDiv.style.marginTop = "10px";
+
+		// Install command
+		commandsDiv.createEl("strong", { text: "1. Install Claude Code:" });
+		const installCode = commandsDiv.createEl("pre");
+		installCode.style.background = "var(--background-secondary)";
+		installCode.style.padding = "8px";
+		installCode.style.borderRadius = "4px";
+		installCode.style.marginTop = "5px";
+		installCode.style.marginBottom = "15px";
+		installCode.createEl("code", {
+			text: "npm install -g @zed-industries/claude-code-acp",
 		});
 
-		// Also update immediately on display to sync with current settings
-		this.updateAgentDropdown();
+		// Find paths
+		commandsDiv.createEl("strong", { text: "2. Find installation paths:" });
+		const pathDiv = commandsDiv.createDiv();
+		pathDiv.style.marginTop = "5px";
+
+		const pathCode = pathDiv.createEl("pre");
+		pathCode.style.background = "var(--background-secondary)";
+		pathCode.style.padding = "8px";
+		pathCode.style.borderRadius = "4px";
+		pathCode.style.marginTop = "5px";
+		pathCode.createEl("code", {
+			text: "which node\nwhich claude-code-acp",
+		});
 
 		new Setting(containerEl)
 			.setName("Node.js path")
@@ -137,15 +154,9 @@ export class AgentClientSettingTab extends PluginSettingTab {
 			}
 		}
 
-		new Setting(containerEl).setName("Built-in agents").setHeading();
+		new Setting(containerEl).setName("Claude Code agent").setHeading();
 
 		this.renderClaudeSettings(containerEl);
-		this.renderCodexSettings(containerEl);
-		this.renderGeminiSettings(containerEl);
-
-		new Setting(containerEl).setName("Custom agents").setHeading();
-
-		this.renderCustomAgents(containerEl);
 
 		new Setting(containerEl).setName("Export").setHeading();
 
@@ -248,180 +259,7 @@ export class AgentClientSettingTab extends PluginSettingTab {
 			);
 	}
 
-	/**
-	 * Update the agent dropdown when settings change.
-	 * Only updates if the value is different to avoid infinite loops.
-	 */
-	private updateAgentDropdown(): void {
-		if (!this.agentSelector) {
-			return;
-		}
 
-		// Get latest settings from store snapshot
-		const settings = this.plugin.settingsStore.getSnapshot();
-		const currentValue = this.agentSelector.getValue();
-
-		// Only update if different to avoid triggering onChange
-		if (settings.activeAgentId !== currentValue) {
-			this.agentSelector.setValue(settings.activeAgentId);
-		}
-	}
-
-	/**
-	 * Called when the settings tab is hidden.
-	 * Clean up subscriptions to prevent memory leaks.
-	 */
-	hide(): void {
-		if (this.unsubscribe) {
-			this.unsubscribe();
-			this.unsubscribe = null;
-		}
-	}
-
-	private renderAgentSelector(containerEl: HTMLElement) {
-		this.plugin.ensureActiveAgentId();
-
-		new Setting(containerEl)
-			.setName("Active agent")
-			.setDesc("Choose which agent handles new chat sessions.")
-			.addDropdown((dropdown) => {
-				this.agentSelector = dropdown;
-				this.populateAgentDropdown(dropdown);
-				dropdown.setValue(this.plugin.settings.activeAgentId);
-				dropdown.onChange(async (value) => {
-					const nextSettings = {
-						...this.plugin.settings,
-						activeAgentId: value,
-					};
-					this.plugin.ensureActiveAgentId();
-					await this.plugin.saveSettingsAndNotify(nextSettings);
-				});
-			});
-	}
-
-	private populateAgentDropdown(dropdown: DropdownComponent) {
-		dropdown.selectEl.empty();
-		for (const option of this.getAgentOptions()) {
-			dropdown.addOption(option.id, option.label);
-		}
-	}
-
-	private refreshAgentDropdown() {
-		if (!this.agentSelector) {
-			return;
-		}
-		this.populateAgentDropdown(this.agentSelector);
-		this.agentSelector.setValue(this.plugin.settings.activeAgentId);
-	}
-
-	private getAgentOptions(): { id: string; label: string }[] {
-		const toOption = (id: string, displayName: string) => ({
-			id,
-			label: `${displayName} (${id})`,
-		});
-		const options: { id: string; label: string }[] = [
-			toOption(
-				this.plugin.settings.claude.id,
-				this.plugin.settings.claude.displayName ||
-					this.plugin.settings.claude.id,
-			),
-			toOption(
-				this.plugin.settings.codex.id,
-				this.plugin.settings.codex.displayName ||
-					this.plugin.settings.codex.id,
-			),
-			toOption(
-				this.plugin.settings.gemini.id,
-				this.plugin.settings.gemini.displayName ||
-					this.plugin.settings.gemini.id,
-			),
-		];
-		for (const agent of this.plugin.settings.customAgents) {
-			if (agent.id && agent.id.length > 0) {
-				const labelSource =
-					agent.displayName && agent.displayName.length > 0
-						? agent.displayName
-						: agent.id;
-				options.push(toOption(agent.id, labelSource));
-			}
-		}
-		const seen = new Set<string>();
-		return options.filter(({ id }) => {
-			if (seen.has(id)) {
-				return false;
-			}
-			seen.add(id);
-			return true;
-		});
-	}
-
-	private renderGeminiSettings(sectionEl: HTMLElement) {
-		const gemini = this.plugin.settings.gemini;
-
-		new Setting(sectionEl)
-			.setName(gemini.displayName || "Gemini CLI")
-			.setHeading();
-
-		new Setting(sectionEl)
-			.setName("API key")
-			.setDesc(
-				"Gemini API key. Required if not logging in with a Google account. (Stored as plain text)",
-			)
-			.addText((text) => {
-				text.setPlaceholder("Enter your Gemini API key")
-					.setValue(gemini.apiKey)
-					.onChange(async (value) => {
-						this.plugin.settings.gemini.apiKey = value.trim();
-						await this.plugin.saveSettings();
-					});
-				text.inputEl.type = "password";
-			});
-
-		new Setting(sectionEl)
-			.setName("Path")
-			.setDesc(
-				'Absolute path to the Gemini CLI. On macOS/Linux, use "which gemini", and on Windows, use "where gemini" to find it.',
-			)
-			.addText((text) => {
-				text.setPlaceholder("Absolute path to gemini")
-					.setValue(gemini.command)
-					.onChange(async (value) => {
-						this.plugin.settings.gemini.command = value.trim();
-						await this.plugin.saveSettings();
-					});
-			});
-
-		new Setting(sectionEl)
-			.setName("Arguments")
-			.setDesc(
-				'Enter one argument per line. Leave empty to run without arguments.(Currently, the Gemini CLI requires the "--experimental-acp" option.)',
-			)
-			.addTextArea((text) => {
-				text.setPlaceholder("")
-					.setValue(this.formatArgs(gemini.args))
-					.onChange(async (value) => {
-						this.plugin.settings.gemini.args =
-							this.parseArgs(value);
-						await this.plugin.saveSettings();
-					});
-				text.inputEl.rows = 3;
-			});
-
-		new Setting(sectionEl)
-			.setName("Environment variables")
-			.setDesc(
-				"Enter KEY=VALUE pairs, one per line. Required to authenticate with Vertex AI. GEMINI_API_KEY is derived from the field above.(Stored as plain text)",
-			)
-			.addTextArea((text) => {
-				text.setPlaceholder("GOOGLE_CLOUD_PROJECT=...")
-					.setValue(this.formatEnv(gemini.env))
-					.onChange(async (value) => {
-						this.plugin.settings.gemini.env = this.parseEnv(value);
-						await this.plugin.saveSettings();
-					});
-				text.inputEl.rows = 3;
-			});
-	}
 
 	private renderClaudeSettings(sectionEl: HTMLElement) {
 		const claude = this.plugin.settings.claude;
@@ -491,262 +329,7 @@ export class AgentClientSettingTab extends PluginSettingTab {
 			});
 	}
 
-	private renderCodexSettings(sectionEl: HTMLElement) {
-		const codex = this.plugin.settings.codex;
 
-		new Setting(sectionEl)
-			.setName(codex.displayName || "Codex")
-			.setHeading();
-
-		new Setting(sectionEl)
-			.setName("API key")
-			.setDesc(
-				"OpenAI API key. Required if not logging in with an OpenAI account. (Stored as plain text)",
-			)
-			.addText((text) => {
-				text.setPlaceholder("Enter your OpenAI API key")
-					.setValue(codex.apiKey)
-					.onChange(async (value) => {
-						this.plugin.settings.codex.apiKey = value.trim();
-						await this.plugin.saveSettings();
-					});
-				text.inputEl.type = "password";
-			});
-
-		new Setting(sectionEl)
-			.setName("Path")
-			.setDesc(
-				'Absolute path to the codex-acp. On macOS/Linux, use "which codex-acp", and on Windows, use "where codex-acp" to find it.',
-			)
-			.addText((text) => {
-				text.setPlaceholder("Absolute path to codex-acp")
-					.setValue(codex.command)
-					.onChange(async (value) => {
-						this.plugin.settings.codex.command = value.trim();
-						await this.plugin.saveSettings();
-					});
-			});
-
-		new Setting(sectionEl)
-			.setName("Arguments")
-			.setDesc(
-				"Enter one argument per line. Leave empty to run without arguments.",
-			)
-			.addTextArea((text) => {
-				text.setPlaceholder("")
-					.setValue(this.formatArgs(codex.args))
-					.onChange(async (value) => {
-						this.plugin.settings.codex.args = this.parseArgs(value);
-						await this.plugin.saveSettings();
-					});
-				text.inputEl.rows = 3;
-			});
-
-		new Setting(sectionEl)
-			.setName("Environment variables")
-			.setDesc(
-				"Enter KEY=VALUE pairs, one per line. OPENAI_API_KEY is derived from the field above.",
-			)
-			.addTextArea((text) => {
-				text.setPlaceholder("")
-					.setValue(this.formatEnv(codex.env))
-					.onChange(async (value) => {
-						this.plugin.settings.codex.env = this.parseEnv(value);
-						await this.plugin.saveSettings();
-					});
-				text.inputEl.rows = 3;
-			});
-	}
-
-	private renderCustomAgents(containerEl: HTMLElement) {
-		if (this.plugin.settings.customAgents.length === 0) {
-			containerEl.createEl("p", {
-				text: "No custom agents configured yet.",
-			});
-		} else {
-			this.plugin.settings.customAgents.forEach((agent, index) => {
-				this.renderCustomAgent(containerEl, agent, index);
-			});
-		}
-
-		new Setting(containerEl).addButton((button) => {
-			button
-				.setButtonText("Add custom agent")
-				.setCta()
-				.onClick(async () => {
-					const newId = this.generateCustomAgentId();
-					const newDisplayName =
-						this.generateCustomAgentDisplayName();
-					this.plugin.settings.customAgents.push({
-						id: newId,
-						displayName: newDisplayName,
-						command: "",
-						args: [],
-						env: [],
-					});
-					this.plugin.ensureActiveAgentId();
-					await this.plugin.saveSettings();
-					this.display();
-				});
-		});
-	}
-
-	private renderCustomAgent(
-		containerEl: HTMLElement,
-		agent: CustomAgentSettings,
-		index: number,
-	) {
-		const blockEl = containerEl.createDiv({
-			cls: "agent-client-custom-agent",
-		});
-
-		const idSetting = new Setting(blockEl)
-			.setName("Agent ID")
-			.setDesc("Unique identifier used to reference this agent.")
-			.addText((text) => {
-				text.setPlaceholder("custom-agent")
-					.setValue(agent.id)
-					.onChange(async (value) => {
-						const previousId =
-							this.plugin.settings.customAgents[index].id;
-						const trimmed = value.trim();
-						let nextId = trimmed;
-						if (nextId.length === 0) {
-							nextId = this.generateCustomAgentId();
-							text.setValue(nextId);
-						}
-						this.plugin.settings.customAgents[index].id = nextId;
-						if (this.plugin.settings.activeAgentId === previousId) {
-							this.plugin.settings.activeAgentId = nextId;
-						}
-						this.plugin.ensureActiveAgentId();
-						await this.plugin.saveSettings();
-						this.refreshAgentDropdown();
-					});
-			});
-
-		idSetting.addExtraButton((button) => {
-			button
-				.setIcon("trash")
-				.setTooltip("Delete this agent")
-				.onClick(async () => {
-					this.plugin.settings.customAgents.splice(index, 1);
-					this.plugin.ensureActiveAgentId();
-					await this.plugin.saveSettings();
-					this.display();
-				});
-		});
-
-		new Setting(blockEl)
-			.setName("Display name")
-			.setDesc("Shown in menus and headers.")
-			.addText((text) => {
-				text.setPlaceholder("Custom agent")
-					.setValue(agent.displayName || agent.id)
-					.onChange(async (value) => {
-						const trimmed = value.trim();
-						this.plugin.settings.customAgents[index].displayName =
-							trimmed.length > 0
-								? trimmed
-								: this.plugin.settings.customAgents[index].id;
-						await this.plugin.saveSettings();
-						this.refreshAgentDropdown();
-					});
-			});
-
-		new Setting(blockEl)
-			.setName("Path")
-			.setDesc("Absolute path to the custom agent.")
-			.addText((text) => {
-				text.setPlaceholder("Absolute path to custom agent")
-					.setValue(agent.command)
-					.onChange(async (value) => {
-						this.plugin.settings.customAgents[index].command =
-							value.trim();
-						await this.plugin.saveSettings();
-					});
-			});
-
-		new Setting(blockEl)
-			.setName("Arguments")
-			.setDesc(
-				"Enter one argument per line. Leave empty to run without arguments.",
-			)
-			.addTextArea((text) => {
-				text.setPlaceholder("--flag\n--another=value")
-					.setValue(this.formatArgs(agent.args))
-					.onChange(async (value) => {
-						this.plugin.settings.customAgents[index].args =
-							this.parseArgs(value);
-						await this.plugin.saveSettings();
-					});
-				text.inputEl.rows = 3;
-			});
-
-		new Setting(blockEl)
-			.setName("Environment variables")
-			.setDesc(
-				"Enter KEY=VALUE pairs, one per line. (Stored as plain text)",
-			)
-			.addTextArea((text) => {
-				text.setPlaceholder("TOKEN=...")
-					.setValue(this.formatEnv(agent.env))
-					.onChange(async (value) => {
-						this.plugin.settings.customAgents[index].env =
-							this.parseEnv(value);
-						await this.plugin.saveSettings();
-					});
-				text.inputEl.rows = 3;
-			});
-	}
-
-	private generateCustomAgentDisplayName(): string {
-		const base = "Custom agent";
-		const existing = new Set<string>();
-		existing.add(
-			this.plugin.settings.claude.displayName ||
-				this.plugin.settings.claude.id,
-		);
-		existing.add(
-			this.plugin.settings.codex.displayName ||
-				this.plugin.settings.codex.id,
-		);
-		existing.add(
-			this.plugin.settings.gemini.displayName ||
-				this.plugin.settings.gemini.id,
-		);
-		for (const item of this.plugin.settings.customAgents) {
-			existing.add(item.displayName || item.id);
-		}
-		if (!existing.has(base)) {
-			return base;
-		}
-		let counter = 2;
-		let candidate = `${base} ${counter}`;
-		while (existing.has(candidate)) {
-			counter += 1;
-			candidate = `${base} ${counter}`;
-		}
-		return candidate;
-	}
-
-	// Create a readable ID for new custom agents and avoid collisions
-	private generateCustomAgentId(): string {
-		const base = "custom-agent";
-		const existing = new Set(
-			this.plugin.settings.customAgents.map((item) => item.id),
-		);
-		if (!existing.has(base)) {
-			return base;
-		}
-		let counter = 2;
-		let candidate = `${base}-${counter}`;
-		while (existing.has(candidate)) {
-			counter += 1;
-			candidate = `${base}-${counter}`;
-		}
-		return candidate;
-	}
 
 	private formatArgs(args: string[]): string {
 		return args.join("\n");

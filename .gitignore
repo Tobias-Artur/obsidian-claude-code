@@ -38,3 +38,5 @@ data.json
 # VitePress build output
 docs/.vitepress/dist/
 docs/.vitepress/cache/
+CLAUDE.md
+settings.local.json

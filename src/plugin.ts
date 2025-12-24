@@ -9,26 +9,17 @@ import { AgentClientSettingTab } from "./components/settings/AgentClientSettingT
 import {
 	sanitizeArgs,
 	normalizeEnvVars,
-	normalizeCustomAgent,
-	ensureUniqueCustomAgentIds,
 } from "./shared/settings-utils";
 import {
 	AgentEnvVar,
-	GeminiAgentSettings,
 	ClaudeAgentSettings,
-	CodexAgentSettings,
-	CustomAgentSettings,
 } from "./domain/models/agent-config";
 
 // Re-export for backward compatibility
-export type { AgentEnvVar, CustomAgentSettings };
+export type { AgentEnvVar };
 
 export interface AgentClientPluginSettings {
-	gemini: GeminiAgentSettings;
 	claude: ClaudeAgentSettings;
-	codex: CodexAgentSettings;
-	customAgents: CustomAgentSettings[];
-	activeAgentId: string;
 	autoAllowPermissions: boolean;
 	autoMentionActiveNote: boolean;
 	debugMode: boolean;
@@ -54,24 +45,6 @@ const DEFAULT_SETTINGS: AgentClientPluginSettings = {
 		args: [],
 		env: [],
 	},
-	codex: {
-		id: "codex-acp",
-		displayName: "Codex",
-		apiKey: "",
-		command: "",
-		args: [],
-		env: [],
-	},
-	gemini: {
-		id: "gemini-cli",
-		displayName: "Gemini CLI",
-		apiKey: "",
-		command: "",
-		args: ["--experimental-acp"],
-		env: [],
-	},
-	customAgents: [],
-	activeAgentId: "claude-code-acp",
 	autoAllowPermissions: false,
 	autoMentionActiveNote: true,
 	debugMode: false,
@@ -164,67 +137,29 @@ export default class AgentClientPlugin extends Plugin {
 	}
 
 	/**
-	 * Get all available agents (claude, codex, gemini, custom)
+	 * Open chat view and start a new chat
 	 */
-	private getAvailableAgents(): Array<{ id: string; displayName: string }> {
-		return [
-			{
-				id: this.settings.claude.id,
-				displayName:
-					this.settings.claude.displayName || this.settings.claude.id,
-			},
-			{
-				id: this.settings.codex.id,
-				displayName:
-					this.settings.codex.displayName || this.settings.codex.id,
-			},
-			{
-				id: this.settings.gemini.id,
-				displayName:
-					this.settings.gemini.displayName || this.settings.gemini.id,
-			},
-			...this.settings.customAgents.map((agent) => ({
-				id: agent.id,
-				displayName: agent.displayName || agent.id,
-			})),
-		];
-	}
-
-	/**
-	 * Open chat view and switch to specified agent
-	 */
-	private async openChatWithAgent(agentId: string): Promise<void> {
-		// 1. Switch agent in settings (if different from current)
-		if (this.settings.activeAgentId !== agentId) {
-			await this.settingsStore.updateSettings({ activeAgentId: agentId });
-		}
-
-		// 2. Activate view (create new or focus existing)
+	private async openChatWithNewSession(): Promise<void> {
+		// Activate view (create new or focus existing)
 		await this.activateView();
 
-		// Trigger new chat with specific agent
-		// Pass agentId so ChatComponent knows to force new session even if empty
+		// Trigger new chat
 		this.app.workspace.trigger(
 			"agent-client:new-chat-requested" as "quit",
-			agentId,
 		);
 	}
 
 	/**
-	 * Register commands for each configured agent
+	 * Register command for creating a new chat
 	 */
 	private registerAgentCommands(): void {
-		const agents = this.getAvailableAgents();
-
-		for (const agent of agents) {
-			this.addCommand({
-				id: `open-chat-with-${agent.id}`,
-				name: `New chat with ${agent.displayName}`,
-				callback: async () => {
-					await this.openChatWithAgent(agent.id);
-				},
-			});
-		}
+		this.addCommand({
+			id: "open-chat-with-claude-code-acp",
+			name: `New chat with ${this.settings.claude.displayName || "Claude Code"}`,
+			callback: async () => {
+				await this.openChatWithNewSession();
+			},
+		});
 	}
 
 	private registerPermissionCommands(): void {
@@ -279,51 +214,9 @@ export default class AgentClientPlugin extends Plugin {
 			rawSettings.claude !== null
 				? (rawSettings.claude as Record<string, unknown>)
 				: {};
-		const codexFromRaw =
-			typeof rawSettings.codex === "object" && rawSettings.codex !== null
-				? (rawSettings.codex as Record<string, unknown>)
-				: {};
-		const geminiFromRaw =
-			typeof rawSettings.gemini === "object" &&
-			rawSettings.gemini !== null
-				? (rawSettings.gemini as Record<string, unknown>)
-				: {};
 
 		const resolvedClaudeArgs = sanitizeArgs(claudeFromRaw.args);
 		const resolvedClaudeEnv = normalizeEnvVars(claudeFromRaw.env);
-		const resolvedCodexArgs = sanitizeArgs(codexFromRaw.args);
-		const resolvedCodexEnv = normalizeEnvVars(codexFromRaw.env);
-		const resolvedGeminiArgs = sanitizeArgs(geminiFromRaw.args);
-		const resolvedGeminiEnv = normalizeEnvVars(geminiFromRaw.env);
-		const customAgents = Array.isArray(rawSettings.customAgents)
-			? ensureUniqueCustomAgentIds(
-					rawSettings.customAgents.map((agent: unknown) => {
-						const agentObj =
-							typeof agent === "object" && agent !== null
-								? (agent as Record<string, unknown>)
-								: {};
-						return normalizeCustomAgent(agentObj);
-					}),
-				)
-			: [];
-
-		const availableAgentIds = [
-			DEFAULT_SETTINGS.claude.id,
-			DEFAULT_SETTINGS.codex.id,
-			DEFAULT_SETTINGS.gemini.id,
-			...customAgents.map((agent) => agent.id),
-		];
-		const rawActiveId =
-			typeof rawSettings.activeAgentId === "string"
-				? rawSettings.activeAgentId.trim()
-				: "";
-		const fallbackActiveId =
-			availableAgentIds.find((id) => id.length > 0) ||
-			DEFAULT_SETTINGS.claude.id;
-		const activeAgentId =
-			availableAgentIds.includes(rawActiveId) && rawActiveId.length > 0
-				? rawActiveId
-				: fallbackActiveId;
 
 		this.settings = {
 			claude: {
@@ -350,52 +243,6 @@ export default class AgentClientPlugin extends Plugin {
 				args: resolvedClaudeArgs.length > 0 ? resolvedClaudeArgs : [],
 				env: resolvedClaudeEnv.length > 0 ? resolvedClaudeEnv : [],
 			},
-			codex: {
-				id: DEFAULT_SETTINGS.codex.id,
-				displayName:
-					typeof codexFromRaw.displayName === "string" &&
-					codexFromRaw.displayName.trim().length > 0
-						? codexFromRaw.displayName.trim()
-						: DEFAULT_SETTINGS.codex.displayName,
-				apiKey:
-					typeof codexFromRaw.apiKey === "string"
-						? codexFromRaw.apiKey
-						: DEFAULT_SETTINGS.codex.apiKey,
-				command:
-					typeof codexFromRaw.command === "string" &&
-					codexFromRaw.command.trim().length > 0
-						? codexFromRaw.command.trim()
-						: DEFAULT_SETTINGS.codex.command,
-				args: resolvedCodexArgs.length > 0 ? resolvedCodexArgs : [],
-				env: resolvedCodexEnv.length > 0 ? resolvedCodexEnv : [],
-			},
-			gemini: {
-				id: DEFAULT_SETTINGS.gemini.id,
-				displayName:
-					typeof geminiFromRaw.displayName === "string" &&
-					geminiFromRaw.displayName.trim().length > 0
-						? geminiFromRaw.displayName.trim()
-						: DEFAULT_SETTINGS.gemini.displayName,
-				apiKey:
-					typeof geminiFromRaw.apiKey === "string"
-						? geminiFromRaw.apiKey
-						: DEFAULT_SETTINGS.gemini.apiKey,
-				command:
-					typeof geminiFromRaw.command === "string" &&
-					geminiFromRaw.command.trim().length > 0
-						? geminiFromRaw.command.trim()
-						: typeof rawSettings.geminiCommandPath === "string" &&
-							  rawSettings.geminiCommandPath.trim().length > 0
-							? rawSettings.geminiCommandPath.trim()
-							: DEFAULT_SETTINGS.gemini.command,
-				args:
-					resolvedGeminiArgs.length > 0
-						? resolvedGeminiArgs
-						: DEFAULT_SETTINGS.gemini.args,
-				env: resolvedGeminiEnv.length > 0 ? resolvedGeminiEnv : [],
-			},
-			customAgents: customAgents,
-			activeAgentId,
 			autoAllowPermissions:
 				typeof rawSettings.autoAllowPermissions === "boolean"
 					? rawSettings.autoAllowPermissions
@@ -457,7 +304,6 @@ export default class AgentClientPlugin extends Plugin {
 					: DEFAULT_SETTINGS.windowsWslDistribution,
 		};
 
-		this.ensureActiveAgentId();
 	}
 
 	async saveSettings() {
@@ -544,27 +390,4 @@ export default class AgentClientPlugin extends Plugin {
 		return false;
 	}
 
-	ensureActiveAgentId(): void {
-		const availableIds = this.collectAvailableAgentIds();
-		if (availableIds.length === 0) {
-			this.settings.activeAgentId = DEFAULT_SETTINGS.claude.id;
-			return;
-		}
-		if (!availableIds.includes(this.settings.activeAgentId)) {
-			this.settings.activeAgentId = availableIds[0];
-		}
-	}
-
-	private collectAvailableAgentIds(): string[] {
-		const ids = new Set<string>();
-		ids.add(this.settings.claude.id);
-		ids.add(this.settings.codex.id);
-		ids.add(this.settings.gemini.id);
-		for (const agent of this.settings.customAgents) {
-			if (agent.id && agent.id.length > 0) {
-				ids.add(agent.id);
-			}
-		}
-		return Array.from(ids);
-	}
 }

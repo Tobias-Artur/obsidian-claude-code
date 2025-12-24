@@ -1,4 +1,4 @@
-import type { AgentEnvVar, CustomAgentSettings } from "../plugin";
+import type { AgentEnvVar } from "../plugin";
 import type { BaseAgentSettings } from "../domain/models/agent-config";
 import type { AgentConfig } from "../domain/ports/agent-client.port";
 
@@ -59,55 +59,6 @@ export const normalizeEnvVars = (value: unknown): AgentEnvVar[] => {
 		}
 		seen.add(pair.key);
 		return true;
-	});
-};
-
-// Rebuild a custom agent entry with defaults and cleaned values
-export const normalizeCustomAgent = (
-	agent: Record<string, unknown>,
-): CustomAgentSettings => {
-	const rawId =
-		agent && typeof agent.id === "string" && agent.id.trim().length > 0
-			? agent.id.trim()
-			: "custom-agent";
-	const rawDisplayName =
-		agent &&
-		typeof agent.displayName === "string" &&
-		agent.displayName.trim().length > 0
-			? agent.displayName.trim()
-			: rawId;
-	return {
-		id: rawId,
-		displayName: rawDisplayName,
-		command:
-			agent &&
-			typeof agent.command === "string" &&
-			agent.command.trim().length > 0
-				? agent.command.trim()
-				: "",
-		args: sanitizeArgs(agent?.args),
-		env: normalizeEnvVars(agent?.env),
-	};
-};
-
-// Ensure custom agent IDs are unique within the collection
-export const ensureUniqueCustomAgentIds = (
-	agents: CustomAgentSettings[],
-): CustomAgentSettings[] => {
-	const seen = new Set<string>();
-	return agents.map((agent) => {
-		const base =
-			agent.id && agent.id.trim().length > 0
-				? agent.id.trim()
-				: "custom-agent";
-		let candidate = base;
-		let suffix = 2;
-		while (seen.has(candidate)) {
-			candidate = `${base}-${suffix}`;
-			suffix += 1;
-		}
-		seen.add(candidate);
-		return { ...agent, id: candidate };
 	});
 };
 

@@ -147,27 +147,10 @@ function ChatComponent({
 	// Computed Values
 	// ============================================================
 	const activeAgentLabel = useMemo(() => {
-		const activeId = session.agentId;
-		if (activeId === plugin.settings.claude.id) {
-			return (
-				plugin.settings.claude.displayName || plugin.settings.claude.id
-			);
-		}
-		if (activeId === plugin.settings.codex.id) {
-			return (
-				plugin.settings.codex.displayName || plugin.settings.codex.id
-			);
-		}
-		if (activeId === plugin.settings.gemini.id) {
-			return (
-				plugin.settings.gemini.displayName || plugin.settings.gemini.id
-			);
-		}
-		const custom = plugin.settings.customAgents.find(
-			(agent) => agent.id === activeId,
+		return (
+			plugin.settings.claude.displayName || plugin.settings.claude.id
 		);
-		return custom?.displayName || custom?.id || activeId;
-	}, [session.agentId, plugin.settings]);
+	}, [plugin.settings.claude]);
 
 	// ============================================================
 	// Callbacks
@@ -318,18 +301,6 @@ function ChatComponent({
 		// Empty dependency array - only run on unmount
 	}, []);
 
-	// Monitor agent changes from settings when messages are empty
-	useEffect(() => {
-		const newActiveAgentId = settings.activeAgentId || settings.claude.id;
-		if (messages.length === 0 && newActiveAgentId !== session.agentId) {
-			void agentSession.switchAgent(newActiveAgentId);
-		}
-	}, [
-		settings.activeAgentId,
-		messages.length,
-		session.agentId,
-		agentSession.switchAgent,
-	]);
 
 	// ============================================================
 	// Effects - ACP Adapter Callbacks
