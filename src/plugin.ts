@@ -110,7 +110,7 @@ export default class AgentClientPlugin extends Plugin {
 		if (leaves.length > 0) {
 			leaf = leaves[0];
 		} else {
-			leaf = workspace.getRightLeaf(false);
+			leaf = workspace.getLeaf('tab');
 			if (leaf) {
 				await leaf.setViewState({
 					type: VIEW_TYPE_CHAT,
