@@ -43,31 +43,40 @@ export class AgentClientSettingTab extends PluginSettingTab {
 		const commandsDiv = installDetails.createDiv();
 		commandsDiv.style.marginTop = "10px";
 
+		// Subscription note
+		const subscriptionNote = commandsDiv.createDiv();
+		subscriptionNote.style.marginBottom = "15px";
+		subscriptionNote.style.padding = "8px";
+		subscriptionNote.style.background = "var(--background-secondary)";
+		subscriptionNote.style.borderRadius = "4px";
+		subscriptionNote.innerHTML =
+			'<strong>Note:</strong> Claude Code requires a subscription. ' +
+			'<a href="https://claude.com/product/claude-code" class="external-link" target="_blank" rel="noopener">Download and subscribe here</a>.';
+
+		// AppImage warning (Linux)
+		const appImageWarning = commandsDiv.createDiv();
+		appImageWarning.style.marginBottom = "15px";
+		appImageWarning.style.padding = "8px";
+		appImageWarning.style.background = "var(--background-modifier-error)";
+		appImageWarning.style.borderRadius = "4px";
+		appImageWarning.style.borderLeft = "4px solid var(--text-error)";
+		appImageWarning.innerHTML =
+			'<strong>⚠️ Linux Users:</strong> This plugin requires the <strong>AppImage</strong> version of Obsidian. ' +
+			'The <strong>Flathub</strong> version will not work due to sandboxing restrictions.';
+
 		// Install command
 		commandsDiv.createEl("strong", { text: "1. Install Claude Code:" });
-		const installCode = commandsDiv.createEl("pre");
-		installCode.style.background = "var(--background-secondary)";
-		installCode.style.padding = "8px";
-		installCode.style.borderRadius = "4px";
-		installCode.style.marginTop = "5px";
-		installCode.style.marginBottom = "15px";
-		installCode.createEl("code", {
-			text: "npm install -g @zed-industries/claude-code-acp",
-		});
+		this.createCodeBlockWithCopy(
+			commandsDiv,
+			"npm install -g @zed-industries/claude-code-acp",
+		);
 
 		// Find paths
 		commandsDiv.createEl("strong", { text: "2. Find installation paths:" });
-		const pathDiv = commandsDiv.createDiv();
-		pathDiv.style.marginTop = "5px";
-
-		const pathCode = pathDiv.createEl("pre");
-		pathCode.style.background = "var(--background-secondary)";
-		pathCode.style.padding = "8px";
-		pathCode.style.borderRadius = "4px";
-		pathCode.style.marginTop = "5px";
-		pathCode.createEl("code", {
-			text: "which node\nwhich claude-code-acp",
-		});
+		this.createCodeBlockWithCopy(
+			commandsDiv,
+			"which node\nwhich claude-code-acp",
+		);
 
 		new Setting(containerEl)
 			.setName("Node.js path")
@@ -259,7 +268,65 @@ export class AgentClientSettingTab extends PluginSettingTab {
 			);
 	}
 
+	/**
+	 * Create a code block with a copy button
+	 */
+	private createCodeBlockWithCopy(
+		parent: HTMLElement,
+		code: string,
+	): HTMLElement {
+		// Container for code block and button
+		const container = parent.createDiv();
+		container.style.position = "relative";
+		container.style.marginTop = "5px";
+		container.style.marginBottom = "15px";
 
+		// Code block
+		const pre = container.createEl("pre");
+		pre.style.background = "var(--background-secondary)";
+		pre.style.padding = "8px";
+		pre.style.paddingRight = "50px"; // Make room for copy button
+		pre.style.borderRadius = "4px";
+		pre.style.margin = "0";
+
+		const codeEl = pre.createEl("code");
+		codeEl.setText(code);
+
+		// Copy button
+		const copyBtn = container.createEl("button");
+		copyBtn.setText("Copy");
+		copyBtn.style.position = "absolute";
+		copyBtn.style.top = "4px";
+		copyBtn.style.right = "4px";
+		copyBtn.style.padding = "4px 8px";
+		copyBtn.style.fontSize = "12px";
+		copyBtn.style.cursor = "pointer";
+		copyBtn.style.background = "var(--interactive-accent)";
+		copyBtn.style.color = "var(--text-on-accent)";
+		copyBtn.style.border = "none";
+		copyBtn.style.borderRadius = "4px";
+
+		copyBtn.addEventListener("click", async () => {
+			try {
+				await navigator.clipboard.writeText(code);
+				const originalText = copyBtn.getText();
+				copyBtn.setText("Copied!");
+				copyBtn.style.background = "var(--interactive-success)";
+				setTimeout(() => {
+					copyBtn.setText(originalText);
+					copyBtn.style.background = "var(--interactive-accent)";
+				}, 2000);
+			} catch (err) {
+				console.error("Failed to copy:", err);
+				copyBtn.setText("Failed");
+				setTimeout(() => {
+					copyBtn.setText("Copy");
+				}, 2000);
+			}
+		});
+
+		return container;
+	}
 
 	private renderClaudeSettings(sectionEl: HTMLElement) {
 		const claude = this.plugin.settings.claude;
