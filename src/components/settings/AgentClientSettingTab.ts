@@ -1,10 +1,4 @@
-import {
-	App,
-	PluginSettingTab,
-	Setting,
-	DropdownComponent,
-	Platform,
-} from "obsidian";
+import { App, PluginSettingTab, Setting, Platform } from "obsidian";
 import type AgentClientPlugin from "../../plugin";
 import type { AgentEnvVar } from "../../plugin";
 import { normalizeEnvVars } from "../../shared/settings-utils";
@@ -34,35 +28,41 @@ export class AgentClientSettingTab extends PluginSettingTab {
 
 		// Installation details
 		const installDetails = containerEl.createEl("details");
-		const installSummary = installDetails.createEl("summary", {
+		installDetails.createEl("summary", {
 			text: "Click to view installation commands",
+			cls: "agent-client-install-summary",
 		});
-		installSummary.style.cursor = "pointer";
-		installSummary.style.marginBottom = "10px";
 
-		const commandsDiv = installDetails.createDiv();
-		commandsDiv.style.marginTop = "10px";
+		const commandsDiv = installDetails.createDiv({
+			cls: "agent-client-commands-div",
+		});
 
 		// Subscription note
-		const subscriptionNote = commandsDiv.createDiv();
-		subscriptionNote.style.marginBottom = "15px";
-		subscriptionNote.style.padding = "8px";
-		subscriptionNote.style.background = "var(--background-secondary)";
-		subscriptionNote.style.borderRadius = "4px";
-		subscriptionNote.innerHTML =
-			'<strong>Note:</strong> Claude Code requires a subscription. ' +
-			'<a href="https://claude.com/product/claude-code" class="external-link" target="_blank" rel="noopener">Download and subscribe here</a>.';
+		const subscriptionNote = commandsDiv.createDiv({
+			cls: "agent-client-subscription-note",
+		});
+		subscriptionNote.createEl("strong", { text: "Note:" });
+		subscriptionNote.appendText(" Claude Code requires a subscription. ");
+		subscriptionNote.createEl("a", {
+			text: "Download and subscribe here",
+			href: "https://claude.com/product/claude-code",
+			cls: "external-link",
+			attr: { target: "_blank", rel: "noopener" },
+		});
+		subscriptionNote.appendText(".");
 
 		// AppImage warning (Linux)
-		const appImageWarning = commandsDiv.createDiv();
-		appImageWarning.style.marginBottom = "15px";
-		appImageWarning.style.padding = "8px";
-		appImageWarning.style.background = "var(--background-modifier-error)";
-		appImageWarning.style.borderRadius = "4px";
-		appImageWarning.style.borderLeft = "4px solid var(--text-error)";
-		appImageWarning.innerHTML =
-			'<strong>⚠️ Linux Users:</strong> This plugin requires the <strong>AppImage</strong> version of Obsidian. ' +
-			'The <strong>Flathub</strong> version will not work due to sandboxing restrictions.';
+		const appImageWarning = commandsDiv.createDiv({
+			cls: "agent-client-appimage-warning",
+		});
+		appImageWarning.createEl("strong", { text: "⚠️ Linux users:" });
+		appImageWarning.appendText(" This plugin requires the ");
+		appImageWarning.createEl("strong", { text: "AppImage" });
+		appImageWarning.appendText(" version of Obsidian. The ");
+		appImageWarning.createEl("strong", { text: "Flathub" });
+		appImageWarning.appendText(
+			" version will not work due to sandboxing restrictions.",
+		);
 
 		// Install command
 		commandsDiv.createEl("strong", { text: "1. Install Claude Code:" });
@@ -174,7 +174,7 @@ export class AgentClientSettingTab extends PluginSettingTab {
 			.setDesc("Folder where chat exports will be saved")
 			.addText((text) =>
 				text
-					.setPlaceholder("Agent Client")
+					.setPlaceholder("Agent client")
 					.setValue(this.plugin.settings.exportSettings.defaultFolder)
 					.onChange(async (value) => {
 						this.plugin.settings.exportSettings.defaultFolder =
@@ -276,53 +276,43 @@ export class AgentClientSettingTab extends PluginSettingTab {
 		code: string,
 	): HTMLElement {
 		// Container for code block and button
-		const container = parent.createDiv();
-		container.style.position = "relative";
-		container.style.marginTop = "5px";
-		container.style.marginBottom = "15px";
+		const container = parent.createDiv({
+			cls: "agent-client-code-container",
+		});
 
 		// Code block
-		const pre = container.createEl("pre");
-		pre.style.background = "var(--background-secondary)";
-		pre.style.padding = "8px";
-		pre.style.paddingRight = "50px"; // Make room for copy button
-		pre.style.borderRadius = "4px";
-		pre.style.margin = "0";
+		const pre = container.createEl("pre", {
+			cls: "agent-client-code-pre",
+		});
 
 		const codeEl = pre.createEl("code");
 		codeEl.setText(code);
 
 		// Copy button
-		const copyBtn = container.createEl("button");
-		copyBtn.setText("Copy");
-		copyBtn.style.position = "absolute";
-		copyBtn.style.top = "4px";
-		copyBtn.style.right = "4px";
-		copyBtn.style.padding = "4px 8px";
-		copyBtn.style.fontSize = "12px";
-		copyBtn.style.cursor = "pointer";
-		copyBtn.style.background = "var(--interactive-accent)";
-		copyBtn.style.color = "var(--text-on-accent)";
-		copyBtn.style.border = "none";
-		copyBtn.style.borderRadius = "4px";
+		const copyBtn = container.createEl("button", {
+			text: "Copy",
+			cls: "agent-client-copy-btn",
+		});
 
-		copyBtn.addEventListener("click", async () => {
-			try {
-				await navigator.clipboard.writeText(code);
-				const originalText = copyBtn.getText();
-				copyBtn.setText("Copied!");
-				copyBtn.style.background = "var(--interactive-success)";
-				setTimeout(() => {
-					copyBtn.setText(originalText);
-					copyBtn.style.background = "var(--interactive-accent)";
-				}, 2000);
-			} catch (err) {
-				console.error("Failed to copy:", err);
-				copyBtn.setText("Failed");
-				setTimeout(() => {
-					copyBtn.setText("Copy");
-				}, 2000);
-			}
+		copyBtn.addEventListener("click", () => {
+			navigator.clipboard
+				.writeText(code)
+				.then(() => {
+					const originalText = copyBtn.getText();
+					copyBtn.setText("Copied!");
+					copyBtn.addClass("copied");
+					setTimeout(() => {
+						copyBtn.setText(originalText);
+						copyBtn.removeClass("copied");
+					}, 2000);
+				})
+				.catch((err) => {
+					console.error("Failed to copy:", err);
+					copyBtn.setText("Failed");
+					setTimeout(() => {
+						copyBtn.setText("Copy");
+					}, 2000);
+				});
 		});
 
 		return container;
@@ -395,8 +385,6 @@ export class AgentClientSettingTab extends PluginSettingTab {
 				text.inputEl.rows = 3;
 			});
 	}
-
-
 
 	private formatArgs(args: string[]): string {
 		return args.join("\n");
