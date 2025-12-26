@@ -166,7 +166,7 @@ function ChatComponent({
 
 			// Skip if already empty AND not switching agents
 			if (messages.length === 0 && !isAgentSwitch) {
-				new Notice("[Agent Client] Already a new session");
+				new Notice("[Agent client] Already a new session");
 				return;
 			}
 
@@ -205,7 +205,7 @@ function ChatComponent({
 
 	const handleExportChat = useCallback(async () => {
 		if (messages.length === 0) {
-			new Notice("[Agent Client] No messages to export");
+			new Notice("[Agent client] No messages to export");
 			return;
 		}
 
@@ -220,9 +220,9 @@ function ChatComponent({
 				session.createdAt,
 				openFile,
 			);
-			new Notice(`[Agent Client] Chat exported to ${filePath}`);
+			new Notice(`[Agent client] Chat exported to ${filePath}`);
 		} catch (error) {
-			new Notice("[Agent Client] Failed to export chat");
+			new Notice("[Agent client] Failed to export chat");
 			logger.error("Export error:", error);
 		}
 	}, [messages, session, plugin, logger]);
@@ -414,7 +414,7 @@ function ChatComponent({
 					const success = await permission.approveActivePermission();
 					if (!success) {
 						new Notice(
-							"[Agent Client] No active permission request",
+							"[Agent client] No active permission request",
 						);
 					}
 				})();
@@ -428,7 +428,7 @@ function ChatComponent({
 					const success = await permission.rejectActivePermission();
 					if (!success) {
 						new Notice(
-							"[Agent Client] No active permission request",
+							"[Agent client] No active permission request",
 						);
 					}
 				})();

@@ -73,13 +73,15 @@ export class SubAgentService {
 	 * @param content - Markdown file content
 	 * @returns Parsed frontmatter object or null if no frontmatter found
 	 */
-	private parseFrontmatter(content: string): any {
+	private parseFrontmatter(
+		content: string,
+	): Record<string, string> | null {
 		// Match frontmatter block: ---\n...\n---
 		const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
 		if (!match) return null;
 
 		const yaml = match[1];
-		const frontmatter: any = {};
+		const frontmatter: Record<string, string> = {};
 
 		// Parse simple key: value pairs
 		const lines = yaml.split("\n");

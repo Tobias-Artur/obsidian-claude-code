@@ -1,0 +1,6 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "niphoros-cloud",
+        "projectKey": "Tobias-Artur_obsidian-claude-code"
+    }
+}

@@ -1119,3 +1119,71 @@ If your plugin does not need CSS, delete this file.
 	word-wrap: break-word;
 	word-break: break-word;
 }
+
+/* ===== Settings Tab Styles ===== */
+
+/* Installation details summary */
+.agent-client-install-summary {
+	cursor: pointer;
+	margin-bottom: 10px;
+}
+
+/* Commands container */
+.agent-client-commands-div {
+	margin-top: 10px;
+}
+
+/* Subscription note box */
+.agent-client-subscription-note {
+	margin-bottom: 15px;
+	padding: 8px;
+	background: var(--background-secondary);
+	border-radius: 4px;
+}
+
+/* AppImage warning box */
+.agent-client-appimage-warning {
+	margin-bottom: 15px;
+	padding: 8px;
+	background: var(--background-modifier-error);
+	border-radius: 4px;
+	border-left: 4px solid var(--text-error);
+}
+
+/* Code block container */
+.agent-client-code-container {
+	position: relative;
+	margin-top: 5px;
+	margin-bottom: 15px;
+}
+
+/* Code block pre element */
+.agent-client-code-pre {
+	background: var(--background-secondary);
+	padding: 8px;
+	padding-right: 50px;
+	border-radius: 4px;
+	margin: 0;
+}
+
+/* Copy button */
+.agent-client-copy-btn {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	padding: 4px 8px;
+	font-size: 12px;
+	cursor: pointer;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border: none;
+	border-radius: 4px;
+}
+
+.agent-client-copy-btn:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.agent-client-copy-btn.copied {
+	background: var(--interactive-success);
+}

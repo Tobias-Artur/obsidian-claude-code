@@ -7,11 +7,7 @@ import type {
 } from "../domain/models/chat-session";
 import type { IAgentClient } from "../domain/ports/agent-client.port";
 import type { ISettingsAccess } from "../domain/ports/settings-access.port";
-import type { AgentClientPluginSettings } from "../plugin";
-import type {
-	BaseAgentSettings,
-	ClaudeAgentSettings,
-} from "../domain/models/agent-config";
+import type { ClaudeAgentSettings } from "../domain/models/agent-config";
 import { toAgentConfig } from "../shared/settings-utils";
 
 // ============================================================================
