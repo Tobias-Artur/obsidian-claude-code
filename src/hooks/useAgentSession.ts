@@ -113,11 +113,9 @@ export interface UseAgentSessionReturn {
 // Helper Functions (Inlined from SwitchAgentUseCase)
 // ============================================================================
 
-
 // ============================================================================
 // Helper Functions (Inlined from ManageSessionUseCase)
 // ============================================================================
-
 
 /**
  * Build AgentConfig with API key injection for Claude.
@@ -345,22 +343,21 @@ export function useAgentSession(
 	 * Switch to a different agent (no-op since only Claude is supported).
 	 * Kept for API compatibility.
 	 */
-	const switchAgent = useCallback(
-		async (agentId: string) => {
-			// No-op: Only Claude is supported
-		},
-		[],
-	);
+	const switchAgent = useCallback(async (agentId: string) => {
+		// No-op: Only Claude is supported
+	}, []);
 
 	/**
 	 * Get list of available agents (always returns Claude).
 	 */
 	const getAvailableAgents = useCallback(() => {
 		const settings = settingsAccess.getSnapshot();
-		return [{
-			id: settings.claude.id,
-			displayName: settings.claude.displayName || settings.claude.id,
-		}];
+		return [
+			{
+				id: settings.claude.id,
+				displayName: settings.claude.displayName || settings.claude.id,
+			},
+		];
 	}, [settingsAccess]);
 
 	/**

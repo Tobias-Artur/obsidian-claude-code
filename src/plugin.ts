@@ -6,14 +6,8 @@ import {
 	type SettingsStore,
 } from "./adapters/obsidian/settings-store.adapter";
 import { AgentClientSettingTab } from "./components/settings/AgentClientSettingTab";
-import {
-	sanitizeArgs,
-	normalizeEnvVars,
-} from "./shared/settings-utils";
-import {
-	AgentEnvVar,
-	ClaudeAgentSettings,
-} from "./domain/models/agent-config";
+import { sanitizeArgs, normalizeEnvVars } from "./shared/settings-utils";
+import { AgentEnvVar, ClaudeAgentSettings } from "./domain/models/agent-config";
 
 // Re-export for backward compatibility
 export type { AgentEnvVar };
@@ -110,7 +104,7 @@ export default class AgentClientPlugin extends Plugin {
 		if (leaves.length > 0) {
 			leaf = leaves[0];
 		} else {
-			leaf = workspace.getLeaf('tab');
+			leaf = workspace.getLeaf("tab");
 			if (leaf) {
 				await leaf.setViewState({
 					type: VIEW_TYPE_CHAT,
@@ -144,9 +138,7 @@ export default class AgentClientPlugin extends Plugin {
 		await this.activateView();
 
 		// Trigger new chat
-		this.app.workspace.trigger(
-			"agent-client:new-chat-requested" as "quit",
-		);
+		this.app.workspace.trigger("agent-client:new-chat-requested" as "quit");
 	}
 
 	/**
@@ -303,7 +295,6 @@ export default class AgentClientPlugin extends Plugin {
 					? rawSettings.windowsWslDistribution
 					: DEFAULT_SETTINGS.windowsWslDistribution,
 		};
-
 	}
 
 	async saveSettings() {
@@ -389,5 +380,4 @@ export default class AgentClientPlugin extends Plugin {
 
 		return false;
 	}
-
 }

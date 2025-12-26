@@ -62,4 +62,3 @@ export interface ClaudeAgentSettings extends BaseAgentSettings {
 	/** Anthropic API key for Claude (ANTHROPIC_API_KEY) */
 	apiKey: string;
 }
-

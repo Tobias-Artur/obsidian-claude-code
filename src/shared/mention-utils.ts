@@ -104,9 +104,7 @@ export function replaceMention(
 	const after = text.slice(mentionContext.end);
 
 	// Sub-agents use @agent-name format, notes use @[[filename]] format
-	const replacement = isSubAgent
-		? ` @${noteTitle} `
-		: ` @[[${noteTitle}]] `;
+	const replacement = isSubAgent ? ` @${noteTitle} ` : ` @[[${noteTitle}]] `;
 
 	const newText = before + replacement + after;
 	const newCursorPos = mentionContext.start + replacement.length;
