@@ -45,11 +45,7 @@ export class SubAgentService {
 
 				// Parse frontmatter
 				const frontmatter = this.parseFrontmatter(content);
-				if (
-					frontmatter &&
-					frontmatter.name &&
-					frontmatter.description
-				) {
+				if (frontmatter?.name && frontmatter?.description) {
 					subAgents.push({
 						name: frontmatter.name,
 						description: frontmatter.description,
