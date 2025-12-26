@@ -81,7 +81,9 @@ export function useMentions(
 			const filteredAgents = subAgents.filter(
 				(a) =>
 					a.name.toLowerCase().includes(ctx.query.toLowerCase()) ||
-					a.description.toLowerCase().includes(ctx.query.toLowerCase()),
+					a.description
+						.toLowerCase()
+						.includes(ctx.query.toLowerCase()),
 			);
 
 			// Get notes and filter by query (existing logic)
@@ -98,7 +100,10 @@ export function useMentions(
 	);
 
 	const selectSuggestion = useCallback(
-		(input: string, suggestion: SubAgentMetadata | NoteMetadata): string => {
+		(
+			input: string,
+			suggestion: SubAgentMetadata | NoteMetadata,
+		): string => {
 			if (!context) {
 				return input;
 			}

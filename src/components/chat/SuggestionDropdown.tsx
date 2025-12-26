@@ -113,10 +113,7 @@ export function SuggestionDropdown({
 			// Check if sub-agent or note by presence of 'emoji' field
 			if ("emoji" in item) {
 				// Sub-agent - type narrowed by 'emoji' property check
-				const truncatedDesc = truncateDescription(
-					item.description,
-					10,
-				);
+				const truncatedDesc = truncateDescription(item.description, 10);
 				return (
 					<div
 						key={item.filePath}

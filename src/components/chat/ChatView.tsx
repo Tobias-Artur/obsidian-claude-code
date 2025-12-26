@@ -147,9 +147,7 @@ function ChatComponent({
 	// Computed Values
 	// ============================================================
 	const activeAgentLabel = useMemo(() => {
-		return (
-			plugin.settings.claude.displayName || plugin.settings.claude.id
-		);
+		return plugin.settings.claude.displayName || plugin.settings.claude.id;
 	}, [plugin.settings.claude]);
 
 	// ============================================================
@@ -300,7 +298,6 @@ function ChatComponent({
 		};
 		// Empty dependency array - only run on unmount
 	}, []);
-
 
 	// ============================================================
 	// Effects - ACP Adapter Callbacks

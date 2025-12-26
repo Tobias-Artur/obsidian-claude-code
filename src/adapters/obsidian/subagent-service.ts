@@ -45,7 +45,7 @@ export class SubAgentService {
 
 				// Parse frontmatter
 				const frontmatter = this.parseFrontmatter(content);
-				if (frontmatter && frontmatter.name && frontmatter.description) {
+				if (frontmatter?.name && frontmatter?.description) {
 					subAgents.push({
 						name: frontmatter.name,
 						description: frontmatter.description,
@@ -73,9 +73,7 @@ export class SubAgentService {
 	 * @param content - Markdown file content
 	 * @returns Parsed frontmatter object or null if no frontmatter found
 	 */
-	private parseFrontmatter(
-		content: string,
-	): Record<string, string> | null {
+	private parseFrontmatter(content: string): Record<string, string> | null {
 		// Match frontmatter block: ---\n...\n---
 		const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
 		if (!match) return null;
