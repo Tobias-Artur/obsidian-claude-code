@@ -30,20 +30,6 @@ jobs:
         run: npm ci
 
       - name: Run npm audit
-        run: npm audit --audit-level=moderate --json > npm-audit.json || true
-
-      - name: Convert npm audit to SARIF
-        uses: microsoft/ossar-action@v1
-        continue-on-error: true
-
-      - name: Upload npm audit results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        continue-on-error: true
-        with:
-          sarif_file: results.sarif
-          category: npm-audit
-
-      - name: Check for vulnerabilities
         run: npm audit --audit-level=moderate
 
   snyk-scan:
@@ -66,7 +52,7 @@ jobs:
         run: npm ci
 
       - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@master
+        uses: snyk/actions/node@9adf32b1121593767fc3c057af55b55db032dc04 # master
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -81,7 +67,7 @@ jobs:
           category: snyk
 
       - name: Check Snyk results
-        uses: snyk/actions/node@master
+        uses: snyk/actions/node@9adf32b1121593767fc3c057af55b55db032dc04 # master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
