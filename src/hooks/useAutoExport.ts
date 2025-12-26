@@ -150,7 +150,7 @@ export function useAutoExport(plugin: AgentClientPlugin): UseAutoExportReturn {
 				}
 			} catch {
 				// Show error notification
-				new Notice("[Agent Client] Failed to export chat");
+				new Notice("[Agent client] Failed to export chat");
 				// Error already logged in exportChat
 			}
 		},

@@ -90,7 +90,9 @@ export function SuggestionDropdown({
 		const selectedElement = dropdownRef.current.children[selectedIndex] as
 			| HTMLElement
 			| undefined;
-		selectedElement?.scrollIntoView({ block: "nearest" });
+		if (selectedElement) {
+			selectedElement.scrollIntoView({ block: "nearest" });
+		}
 	}, [selectedIndex]);
 
 	if (items.length === 0) {
@@ -110,23 +112,22 @@ export function SuggestionDropdown({
 		if (type === "mention") {
 			// Check if sub-agent or note by presence of 'emoji' field
 			if ("emoji" in item) {
-				// Sub-agent
-				const subAgent = item as SubAgentMetadata;
+				// Sub-agent - type narrowed by 'emoji' property check
 				const truncatedDesc = truncateDescription(
-					subAgent.description,
+					item.description,
 					10,
 				);
 				return (
 					<div
-						key={subAgent.filePath}
+						key={item.filePath}
 						className={`mention-dropdown-item ${isSelected ? "selected" : ""} ${hasBorder ? "has-border" : ""}`}
-						onClick={() => onSelect(subAgent)}
+						onClick={() => onSelect(item)}
 						onMouseEnter={() => {
 							// Could update selected index on hover
 						}}
 					>
 						<div className="mention-dropdown-item-name">
-							{subAgent.emoji} {subAgent.name}
+							{item.emoji} {item.name}
 						</div>
 						{truncatedDesc && (
 							<div className="mention-dropdown-item-path">
@@ -135,49 +136,48 @@ export function SuggestionDropdown({
 						)}
 					</div>
 				);
-			} else {
-				// Note
-				const note = item as NoteMetadata;
+			} else if ("path" in item) {
+				// Note - type narrowed by 'path' property check
 				return (
 					<div
-						key={note.path}
+						key={item.path}
 						className={`mention-dropdown-item ${isSelected ? "selected" : ""} ${hasBorder ? "has-border" : ""}`}
-						onClick={() => onSelect(note)}
+						onClick={() => onSelect(item)}
 						onMouseEnter={() => {
 							// Could update selected index on hover
 						}}
 					>
 						<div className="mention-dropdown-item-name">
-							{note.name}
+							{item.name}
 						</div>
 						<div className="mention-dropdown-item-path">
-							{note.path}
+							{item.path}
 						</div>
 					</div>
 				);
 			}
-		} else {
-			// type === "slash-command"
-			const command = item as SlashCommand;
-			return (
-				<div
-					key={command.name}
-					className={`mention-dropdown-item ${isSelected ? "selected" : ""} ${hasBorder ? "has-border" : ""}`}
-					onClick={() => onSelect(command)}
-					onMouseEnter={() => {
-						// Could update selected index on hover
-					}}
-				>
-					<div className="mention-dropdown-item-name">
-						/{command.name}
-					</div>
-					<div className="mention-dropdown-item-path">
-						{command.description}
-						{command.hint && ` (${command.hint})`}
-					</div>
-				</div>
-			);
 		}
+		// type === "slash-command"
+		// At this point, we know it's a SlashCommand since we checked type !== "mention"
+		const command = item as SlashCommand;
+		return (
+			<div
+				key={command.name}
+				className={`mention-dropdown-item ${isSelected ? "selected" : ""} ${hasBorder ? "has-border" : ""}`}
+				onClick={() => onSelect(command)}
+				onMouseEnter={() => {
+					// Could update selected index on hover
+				}}
+			>
+				<div className="mention-dropdown-item-name">
+					/{command.name}
+				</div>
+				<div className="mention-dropdown-item-path">
+					{command.description}
+					{command.hint && ` (${command.hint})`}
+				</div>
+			</div>
+		);
 	};
 
 	return (
