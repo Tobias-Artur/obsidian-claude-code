@@ -41,7 +41,7 @@
 	"dependencies": {
 		"@agentclientprotocol/sdk": "^0.11.0",
 		"@codemirror/state": "^6.5.2",
-		"@codemirror/view": "^6.38.8",
+		"@codemirror/view": "^6.39.4",
 		"react": "^19.1.1",
 		"react-dom": "^19.2.1",
 		"semver": "^7.7.3"
